@@ -258,17 +258,19 @@ class Rifle(object):  # pylint: disable=too-many-instance-attributes
         self._mimetype, _ = mimetypes.guess_type(fname)
 
         if not self._mimetype:
-            process = Popen(["file", "--mime-type", "-Lb", fname], stdout=PIPE, stderr=PIPE)
-            mimetype, _ = process.communicate()
-            self._mimetype = mimetype.decode(ENCODING).strip()
-            if self._mimetype == 'application/octet-stream':
-                try:
+            try:
+                process = Popen(["file", "--mime-type", "-Lb", fname], stdout=PIPE, stderr=PIPE)
+                mimetype, _ = process.communicate()
+                self._mimetype = mimetype.decode(ENCODING).strip()
+                if self._mimetype == 'application/octet-stream':
                     process = Popen(["mimetype", "--output-format", "%m", fname],
                                     stdout=PIPE, stderr=PIPE)
                     mimetype, _ = process.communicate()
                     self._mimetype = mimetype.decode(ENCODING).strip()
-                except OSError:
-                    pass
+            except OSError:
+                if not self._mimetype:
+                    # No methods available, fallback as plain text.
+                    self._mimetype = "text/plain"
         return self._mimetype
 
     def _build_command(self, files, action, flags):
